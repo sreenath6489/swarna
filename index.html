@@ -14,7 +14,7 @@
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .step-transition { transition: all 0.3s ease; }
+        select { cursor: pointer; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -28,24 +28,51 @@
 
         <div class="grid grid-cols-1 gap-8">
             
-            <!-- Section 1: Initial Balance & Maintenance -->
+            <!-- Section 1: Month Selection & Collections -->
             <section class="card p-6">
-                <div class="flex items-center mb-4 gap-2 text-indigo-600">
-                    <i class="fas fa-coins text-xl"></i>
-                    <h2 class="text-xl font-bold">Collections & Initial Balance</h2>
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 border-b pb-4">
+                    <div class="flex items-center gap-2 text-indigo-600">
+                        <i class="fas fa-calendar-alt text-xl"></i>
+                        <h2 class="text-xl font-bold">Collection Period</h2>
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="selectedMonth" onchange="updateMonthLabels()" class="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium">
+                            <option value="0">January</option>
+                            <option value="1" selected>February</option>
+                            <option value="2">March</option>
+                            <option value="3">April</option>
+                            <option value="4">May</option>
+                            <option value="5">June</option>
+                            <option value="6">July</option>
+                            <option value="7">August</option>
+                            <option value="8">September</option>
+                            <option value="9">October</option>
+                            <option value="10">November</option>
+                            <option value="11">December</option>
+                        </select>
+                        <select id="selectedYear" onchange="updateMonthLabels()" class="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-medium">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Previous Month Balance (₹)</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            <span class="prevMonthText">Previous</span> Balance (₹)
+                        </label>
                         <input type="number" id="prevBalance" value="0" oninput="calculateTotals()" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Block A Maintenance (₹)</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            Block A Maintenance (<span class="currMonthText">Current</span>)
+                        </label>
                         <input type="number" id="blockA" value="0" oninput="calculateTotals()" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Block B Maintenance (₹)</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                            Block B Maintenance (<span class="currMonthText">Current</span>)
+                        </label>
                         <input type="number" id="blockB" value="0" oninput="calculateTotals()" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                     </div>
                 </div>
@@ -53,8 +80,8 @@
                 <div class="mt-6 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-semibold text-indigo-900">Was previous balance added to bank?</p>
-                            <p class="text-xs text-indigo-700 mt-1">If "Yes", previous balance is excluded from the current liquid cash total.</p>
+                            <p class="text-sm font-semibold text-indigo-900">Was <span class="prevMonthText">Previous</span> balance added to bank?</p>
+                            <p class="text-xs text-indigo-700 mt-1">If "Yes", the <span class="prevMonthText">Previous</span> balance is excluded from current total.</p>
                         </div>
                         <div class="flex gap-2">
                             <button onclick="setBankStatus(true)" id="btnBankYes" class="px-4 py-2 rounded-lg font-medium transition-colors bg-white text-slate-600 border border-slate-200 hover:bg-indigo-100">Yes</button>
@@ -65,10 +92,10 @@
 
                 <div class="mt-6 flex flex-col md:flex-row gap-4 items-center justify-between border-t pt-4">
                     <div class="text-slate-600">
-                        Current Collections (A+B): <span class="font-bold text-slate-900">₹<span id="currentCollections">0</span></span>
+                        <span class="currMonthText">Current</span> Collections: <span class="font-bold text-slate-900">₹<span id="currentCollections">0</span></span>
                     </div>
                     <div class="text-lg">
-                        Available Balance (Before Expenses): <span class="font-bold text-indigo-600">₹<span id="initialEndTotal">0</span></span>
+                        Total at end of <span class="currMonthText">Current</span>: <span class="font-bold text-indigo-600">₹<span id="initialEndTotal">0</span></span>
                     </div>
                 </div>
             </section>
@@ -77,19 +104,22 @@
             <section class="card p-6">
                 <div class="flex items-center mb-4 gap-2 text-rose-600">
                     <i class="fas fa-file-invoice-dollar text-xl"></i>
-                    <h2 class="text-xl font-bold">Expense Management</h2>
+                    <h2 class="text-xl font-bold"><span class="nextMonthText">Next</span> Month Expenses</h2>
                 </div>
 
                 <div class="bg-slate-50 p-4 rounded-xl mb-6">
-                    <p class="text-sm font-medium text-slate-700 mb-3">Add New Expense Item</p>
+                    <p class="text-sm font-medium text-slate-700 mb-3">Add Expense Item</p>
                     <div class="flex flex-col md:flex-row gap-3">
                         <select id="expenseSelect" class="flex-1 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
                             <option value="">-- Select Preset Expense --</option>
                             <option value="Watchman salary">Watchman salary</option>
-                            <option value="Eswar poojari">Eswar poojari</option>
-                            <option value="Subramanyam salary">Subramanyam salary</option>
-                            <option value="Sankar tough Ganga">Sankar tough Ganga</option>
-                            <option value="Garage">Garage</option>
+                            <option value="Eswar poojari">Temple poojari Salary & Daily Pooja Expenses</option>
+                            
+
+                            <option value="Subramanyam salary">D.Subramanyam (A & B Blocks Maintenance Colelction)</option>
+                            <option value="Sankar tough Ganga">Sankar Telugu Ganga</option>
+                            <option value="Garage">Muni Garage Shankar </option>
+                            
                             <option value="CUSTOM">Custom Field...</option>
                         </select>
                         <input type="text" id="customExpenseName" placeholder="Expense Name" class="hidden flex-1 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
@@ -110,11 +140,10 @@
                             </tr>
                         </thead>
                         <tbody id="expenseTableBody" class="divide-y divide-slate-100">
-                            <!-- Rows dynamically added here -->
                         </tbody>
                         <tfoot class="bg-slate-50 font-bold">
                             <tr>
-                                <td class="p-3 text-slate-700">Total Expenses</td>
+                                <td class="p-3 text-slate-700">Total <span class="nextMonthText">Next</span> Expenses</td>
                                 <td class="p-3 text-right text-rose-600">₹<span id="expenseTotalDisplay">0</span></td>
                                 <td></td>
                             </tr>
@@ -128,10 +157,10 @@
                 <div class="flex flex-col md:flex-row items-center justify-between gap-6">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Final Summary</h2>
-                        <p class="text-slate-500">Remaining balance after all deductions</p>
+                        <p class="text-slate-500">Total remaining at the end of <span class="nextMonthText">Next</span> Month</p>
                     </div>
                     <div class="text-center md:text-right">
-                        <p class="text-sm uppercase tracking-wider text-slate-400 font-bold">Final Remaining Balance</p>
+                        <p class="text-sm uppercase tracking-wider text-slate-400 font-bold">Final Balance</p>
                         <p class="text-4xl font-black text-emerald-600">₹<span id="finalBalanceTotal">0</span></p>
                     </div>
                 </div>
@@ -150,8 +179,38 @@
 
     <!-- UI Logic Scripts -->
     <script>
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         let isBanked = false;
         let expenses = [];
+
+        // Initialize Year Select
+        const yearSelect = document.getElementById('selectedYear');
+        const currentYear = new Date().getFullYear();
+        for(let i = currentYear - 2; i <= currentYear + 5; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.innerText = i;
+            if(i === currentYear) opt.selected = true;
+            yearSelect.appendChild(opt);
+        }
+
+        function updateMonthLabels() {
+            const selectedIdx = parseInt(document.getElementById('selectedMonth').value);
+            
+            const prevIdx = (selectedIdx - 1 + 12) % 12;
+            const nextIdx = (selectedIdx + 1) % 12;
+
+            const prevName = monthNames[prevIdx];
+            const currName = monthNames[selectedIdx];
+            const nextName = monthNames[nextIdx];
+
+            // Update all label spans
+            document.querySelectorAll('.prevMonthText').forEach(el => el.innerText = prevName);
+            document.querySelectorAll('.currMonthText').forEach(el => el.innerText = currName);
+            document.querySelectorAll('.nextMonthText').forEach(el => el.innerText = nextName);
+            
+            calculateTotals();
+        }
 
         // Handle the expense dropdown toggle for custom entry
         document.getElementById('expenseSelect').addEventListener('change', function(e) {
@@ -187,7 +246,6 @@
             const currentCollections = blockA + blockB;
             document.getElementById('currentCollections').innerText = currentCollections.toLocaleString();
 
-            // Core Logic: If banked, previous balance is NOT in liquid total
             const initialEndTotal = isBanked ? currentCollections : (prevBal + currentCollections);
             document.getElementById('initialEndTotal').innerText = initialEndTotal.toLocaleString();
 
@@ -197,7 +255,6 @@
             const finalBalanceTotal = initialEndTotal - expenseTotal;
             document.getElementById('finalBalanceTotal').innerText = finalBalanceTotal.toLocaleString();
             
-            // Highlight negative balance
             const finalDisplay = document.getElementById('finalBalanceTotal');
             if (finalBalanceTotal < 0) {
                 finalDisplay.classList.replace('text-emerald-600', 'text-rose-600');
@@ -210,7 +267,6 @@
             const select = document.getElementById('expenseSelect');
             const customName = document.getElementById('customExpenseName').value;
             const amount = parseFloat(document.getElementById('expenseAmount').value);
-
             let name = select.value === 'CUSTOM' ? customName : select.value;
 
             if (!name || isNaN(amount) || amount <= 0) {
@@ -219,13 +275,10 @@
             }
 
             expenses.push({ id: Date.now(), name, amount });
-            
-            // Clear inputs
             select.selectedIndex = 0;
             document.getElementById('customExpenseName').value = '';
             document.getElementById('customExpenseName').classList.add('hidden');
             document.getElementById('expenseAmount').value = '';
-
             renderExpenses();
             calculateTotals();
         }
@@ -239,12 +292,10 @@
         function renderExpenses() {
             const tbody = document.getElementById('expenseTableBody');
             tbody.innerHTML = '';
-
             if (expenses.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="3" class="p-8 text-center text-slate-400 italic">No expenses added yet</td></tr>`;
                 return;
             }
-
             expenses.forEach(item => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -260,10 +311,15 @@
             });
         }
 
-        function downloadPDF() {
+        async function downloadPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
+            const selectedMonth = monthNames[document.getElementById('selectedMonth').value];
+            const selectedYear = document.getElementById('selectedYear').value;
+            const prevName = document.querySelector('.prevMonthText').innerText;
+            const nextName = document.querySelector('.nextMonthText').innerText;
+
             const prevBal = document.getElementById('prevBalance').value || 0;
             const blockA = document.getElementById('blockA').value || 0;
             const blockB = document.getElementById('blockB').value || 0;
@@ -272,28 +328,26 @@
             const expTotal = document.getElementById('expenseTotalDisplay').innerText;
             const final = document.getElementById('finalBalanceTotal').innerText;
 
-            // Header
             doc.setFontSize(22);
             doc.setTextColor(30, 41, 59);
             doc.text("Swarna Residency", 105, 20, { align: "center" });
             
             doc.setFontSize(12);
             doc.setTextColor(100);
-            doc.text("Apartment Management Monthly Report", 105, 28, { align: "center" });
+            doc.text(`Monthly Management Report: ${selectedMonth} ${selectedYear}`, 105, 28, { align: "center" });
             doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 34, { align: "center" });
 
-            // Summary Section
             doc.setFontSize(14);
             doc.setTextColor(79, 70, 229);
-            doc.text("1. Collections Summary", 14, 45);
+            doc.text(`1. Collections (${selectedMonth})`, 14, 45);
             
             const summaryData = [
-                ["Previous Month Balance", `Rs. ${parseFloat(prevBal).toLocaleString()}`],
-                ["Block A Maintenance", `Rs. ${parseFloat(blockA).toLocaleString()}`],
-                ["Block B Maintenance", `Rs. ${parseFloat(blockB).toLocaleString()}`],
-                ["Total Collections", `Rs. ${totalColl}`],
-                ["Previous Balance Banked?", isBanked ? "Yes (Excluded from Cash)" : "No (Included in Cash)"],
-                ["Available Funds (Before Expenses)", `Rs. ${initialTotal}`]
+                [`Balance from ${prevName}`, `Rs. ${parseFloat(prevBal).toLocaleString()}`],
+                [`Block A Maintenance (${selectedMonth})`, `Rs. ${parseFloat(blockA).toLocaleString()}`],
+                [`Block B Maintenance (${selectedMonth})`, `Rs. ${parseFloat(blockB).toLocaleString()}`],
+                ["Total Maintenance Collected", `Rs. ${totalColl}`],
+                [`${prevName} Balance Banked?`, isBanked ? "Yes (Excluded from current cash)" : "No (Included in cash)"],
+                [`Total Balance end of ${selectedMonth}`, `Rs. ${initialTotal}`]
             ];
 
             doc.autoTable({
@@ -304,32 +358,30 @@
                 headStyles: { fillColor: [79, 70, 229] }
             });
 
-            // Expenses Section
             doc.setFontSize(14);
             doc.setTextColor(225, 29, 72);
-            doc.text("2. Expense Breakdown", 14, doc.lastAutoTable.finalY + 15);
+            doc.text(`2. Expenses (${nextName})`, 14, doc.lastAutoTable.finalY + 15);
 
             const expenseData = expenses.map(e => [e.name, `Rs. ${e.amount.toLocaleString()}`]);
             if (expenseData.length === 0) expenseData.push(["No expenses recorded", "Rs. 0"]);
 
             doc.autoTable({
                 startY: doc.lastAutoTable.finalY + 20,
-                head: [['Expense Description', 'Amount']],
+                head: [[`Expense Description for ${nextName}`, 'Amount']],
                 body: expenseData,
                 theme: 'striped',
                 headStyles: { fillColor: [225, 29, 72] }
             });
 
-            // Final Calculation
             const finalY = doc.lastAutoTable.finalY + 20;
             doc.setDrawColor(200);
             doc.line(14, finalY, 196, finalY);
 
             doc.setFontSize(16);
             doc.setTextColor(5, 150, 105);
-            doc.text(`Final Remaining Balance: Rs. ${final}`, 196, finalY + 10, { align: "right" });
+            doc.text(`Total Remaining Balance end of ${nextName}: Rs. ${final}`, 196, finalY + 10, { align: "right" });
 
-            doc.save(`Swarna_Residency_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            doc.save(`Swarna_Residency_Report_${selectedMonth}_${selectedYear}.pdf`);
         }
 
         function resetAll() {
@@ -346,9 +398,11 @@
             setTimeout(() => div.remove(), 3000);
         }
 
-        // Initialize
-        calculateTotals();
-        renderExpenses();
+        // Run initial label update
+        window.onload = () => {
+            updateMonthLabels();
+            renderExpenses();
+        };
     </script>
 </body>
 </html>
