@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swarna Residency Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .step-transition { transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-slate-800">Swarna Residency</h1>
+            <p class="text-slate-500">Apartment Management Portal</p>
+        </header>
+
+        <div class="grid grid-cols-1 gap-8">
+            
+            <!-- Section 1: Initial Balance & Maintenance -->
+            <section class="card p-6">
+                <div class="flex items-center mb-4 gap-2 text-indigo-600">
+                    <i class="fas fa-coins text-xl"></i>
+                    <h2 class="text-xl font-bold">Collections & Initial Balance</h2>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Previous Month Balance (₹)</label>
+                        <input type="number" id="prevBalance" value="0" oninput="calculateTotals()" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Block A Maintenance (₹)</label>
+                        <input type="number" id="blockA" value="0" oninput="calculateTotals()" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Block B Maintenance (₹)</label>
+                        <input type="number" id="blockB" value="0" oninput="calculateTotals()" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+
+                <div class="mt-6 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold text-indigo-900">Was previous balance added to bank?</p>
+                            <p class="text-xs text-indigo-700 mt-1">If "Yes", previous balance is excluded from the current liquid cash total.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="setBankStatus(true)" id="btnBankYes" class="px-4 py-2 rounded-lg font-medium transition-colors bg-white text-slate-600 border border-slate-200 hover:bg-indigo-100">Yes</button>
+                            <button onclick="setBankStatus(false)" id="btnBankNo" class="px-4 py-2 rounded-lg font-medium transition-colors bg-indigo-600 text-white shadow-md">No</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex flex-col md:flex-row gap-4 items-center justify-between border-t pt-4">
+                    <div class="text-slate-600">
+                        Current Collections (A+B): <span class="font-bold text-slate-900">₹<span id="currentCollections">0</span></span>
+                    </div>
+                    <div class="text-lg">
+                        Available Balance (Before Expenses): <span class="font-bold text-indigo-600">₹<span id="initialEndTotal">0</span></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: Expenses -->
+            <section class="card p-6">
+                <div class="flex items-center mb-4 gap-2 text-rose-600">
+                    <i class="fas fa-file-invoice-dollar text-xl"></i>
+                    <h2 class="text-xl font-bold">Expense Management</h2>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl mb-6">
+                    <p class="text-sm font-medium text-slate-700 mb-3">Add New Expense Item</p>
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <select id="expenseSelect" class="flex-1 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
+                            <option value="">-- Select Preset Expense --</option>
+                            <option value="Watchman salary">Watchman salary</option>
+                            <option value="Eswar poojari">Eswar poojari</option>
+                            <option value="Subramanyam salary">Subramanyam salary</option>
+                            <option value="Sankar tough Ganga">Sankar tough Ganga</option>
+                            <option value="Garage">Garage</option>
+                            <option value="CUSTOM">Custom Field...</option>
+                        </select>
+                        <input type="text" id="customExpenseName" placeholder="Expense Name" class="hidden flex-1 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
+                        <input type="number" id="expenseAmount" placeholder="Amount (₹)" class="md:w-32 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
+                        <button onclick="addExpense()" class="bg-rose-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-rose-700 transition-colors">
+                            Add Item
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-hidden border border-slate-200 rounded-lg">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="p-3 font-semibold text-slate-700">Description</th>
+                                <th class="p-3 font-semibold text-slate-700 text-right">Amount (₹)</th>
+                                <th class="p-3 font-semibold text-slate-700 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenseTableBody" class="divide-y divide-slate-100">
+                            <!-- Rows dynamically added here -->
+                        </tbody>
+                        <tfoot class="bg-slate-50 font-bold">
+                            <tr>
+                                <td class="p-3 text-slate-700">Total Expenses</td>
+                                <td class="p-3 text-right text-rose-600">₹<span id="expenseTotalDisplay">0</span></td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Final Summary -->
+            <section class="card p-6 border-l-8 border-emerald-500">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Final Summary</h2>
+                        <p class="text-slate-500">Remaining balance after all deductions</p>
+                    </div>
+                    <div class="text-center md:text-right">
+                        <p class="text-sm uppercase tracking-wider text-slate-400 font-bold">Final Remaining Balance</p>
+                        <p class="text-4xl font-black text-emerald-600">₹<span id="finalBalanceTotal">0</span></p>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex flex-col md:flex-row gap-4">
+                    <button onclick="downloadPDF()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-slate-900 transition-all flex items-center justify-center gap-2 shadow-lg">
+                        <i class="fas fa-file-pdf"></i> Download PDF Report
+                    </button>
+                    <button onclick="resetAll()" class="px-6 py-3 rounded-xl font-medium text-slate-500 border border-slate-200 hover:bg-slate-100 transition-colors">
+                        Reset Data
+                    </button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- UI Logic Scripts -->
+    <script>
+        let isBanked = false;
+        let expenses = [];
+
+        // Handle the expense dropdown toggle for custom entry
+        document.getElementById('expenseSelect').addEventListener('change', function(e) {
+            const customInput = document.getElementById('customExpenseName');
+            if (e.target.value === 'CUSTOM') {
+                customInput.classList.remove('hidden');
+            } else {
+                customInput.classList.add('hidden');
+                customInput.value = '';
+            }
+        });
+
+        function setBankStatus(status) {
+            isBanked = status;
+            const btnYes = document.getElementById('btnBankYes');
+            const btnNo = document.getElementById('btnBankNo');
+
+            if (status) {
+                btnYes.className = "px-4 py-2 rounded-lg font-medium transition-colors bg-indigo-600 text-white shadow-md";
+                btnNo.className = "px-4 py-2 rounded-lg font-medium transition-colors bg-white text-slate-600 border border-slate-200 hover:bg-indigo-100";
+            } else {
+                btnNo.className = "px-4 py-2 rounded-lg font-medium transition-colors bg-indigo-600 text-white shadow-md";
+                btnYes.className = "px-4 py-2 rounded-lg font-medium transition-colors bg-white text-slate-600 border border-slate-200 hover:bg-indigo-100";
+            }
+            calculateTotals();
+        }
+
+        function calculateTotals() {
+            const prevBal = parseFloat(document.getElementById('prevBalance').value) || 0;
+            const blockA = parseFloat(document.getElementById('blockA').value) || 0;
+            const blockB = parseFloat(document.getElementById('blockB').value) || 0;
+
+            const currentCollections = blockA + blockB;
+            document.getElementById('currentCollections').innerText = currentCollections.toLocaleString();
+
+            // Core Logic: If banked, previous balance is NOT in liquid total
+            const initialEndTotal = isBanked ? currentCollections : (prevBal + currentCollections);
+            document.getElementById('initialEndTotal').innerText = initialEndTotal.toLocaleString();
+
+            const expenseTotal = expenses.reduce((sum, item) => sum + item.amount, 0);
+            document.getElementById('expenseTotalDisplay').innerText = expenseTotal.toLocaleString();
+
+            const finalBalanceTotal = initialEndTotal - expenseTotal;
+            document.getElementById('finalBalanceTotal').innerText = finalBalanceTotal.toLocaleString();
+            
+            // Highlight negative balance
+            const finalDisplay = document.getElementById('finalBalanceTotal');
+            if (finalBalanceTotal < 0) {
+                finalDisplay.classList.replace('text-emerald-600', 'text-rose-600');
+            } else {
+                finalDisplay.classList.replace('text-rose-600', 'text-emerald-600');
+            }
+        }
+
+        function addExpense() {
+            const select = document.getElementById('expenseSelect');
+            const customName = document.getElementById('customExpenseName').value;
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+
+            let name = select.value === 'CUSTOM' ? customName : select.value;
+
+            if (!name || isNaN(amount) || amount <= 0) {
+                showToast("Please enter a valid expense name and amount.");
+                return;
+            }
+
+            expenses.push({ id: Date.now(), name, amount });
+            
+            // Clear inputs
+            select.selectedIndex = 0;
+            document.getElementById('customExpenseName').value = '';
+            document.getElementById('customExpenseName').classList.add('hidden');
+            document.getElementById('expenseAmount').value = '';
+
+            renderExpenses();
+            calculateTotals();
+        }
+
+        function removeExpense(id) {
+            expenses = expenses.filter(e => e.id !== id);
+            renderExpenses();
+            calculateTotals();
+        }
+
+        function renderExpenses() {
+            const tbody = document.getElementById('expenseTableBody');
+            tbody.innerHTML = '';
+
+            if (expenses.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-8 text-center text-slate-400 italic">No expenses added yet</td></tr>`;
+                return;
+            }
+
+            expenses.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-3 text-slate-700 font-medium">${item.name}</td>
+                    <td class="p-3 text-right text-slate-900">₹${item.amount.toLocaleString()}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="removeExpense(${item.id})" class="text-slate-400 hover:text-rose-600 transition-colors">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const prevBal = document.getElementById('prevBalance').value || 0;
+            const blockA = document.getElementById('blockA').value || 0;
+            const blockB = document.getElementById('blockB').value || 0;
+            const totalColl = document.getElementById('currentCollections').innerText;
+            const initialTotal = document.getElementById('initialEndTotal').innerText;
+            const expTotal = document.getElementById('expenseTotalDisplay').innerText;
+            const final = document.getElementById('finalBalanceTotal').innerText;
+
+            // Header
+            doc.setFontSize(22);
+            doc.setTextColor(30, 41, 59);
+            doc.text("Swarna Residency", 105, 20, { align: "center" });
+            
+            doc.setFontSize(12);
+            doc.setTextColor(100);
+            doc.text("Apartment Management Monthly Report", 105, 28, { align: "center" });
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 34, { align: "center" });
+
+            // Summary Section
+            doc.setFontSize(14);
+            doc.setTextColor(79, 70, 229);
+            doc.text("1. Collections Summary", 14, 45);
+            
+            const summaryData = [
+                ["Previous Month Balance", `Rs. ${parseFloat(prevBal).toLocaleString()}`],
+                ["Block A Maintenance", `Rs. ${parseFloat(blockA).toLocaleString()}`],
+                ["Block B Maintenance", `Rs. ${parseFloat(blockB).toLocaleString()}`],
+                ["Total Collections", `Rs. ${totalColl}`],
+                ["Previous Balance Banked?", isBanked ? "Yes (Excluded from Cash)" : "No (Included in Cash)"],
+                ["Available Funds (Before Expenses)", `Rs. ${initialTotal}`]
+            ];
+
+            doc.autoTable({
+                startY: 50,
+                head: [['Description', 'Amount']],
+                body: summaryData,
+                theme: 'grid',
+                headStyles: { fillColor: [79, 70, 229] }
+            });
+
+            // Expenses Section
+            doc.setFontSize(14);
+            doc.setTextColor(225, 29, 72);
+            doc.text("2. Expense Breakdown", 14, doc.lastAutoTable.finalY + 15);
+
+            const expenseData = expenses.map(e => [e.name, `Rs. ${e.amount.toLocaleString()}`]);
+            if (expenseData.length === 0) expenseData.push(["No expenses recorded", "Rs. 0"]);
+
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 20,
+                head: [['Expense Description', 'Amount']],
+                body: expenseData,
+                theme: 'striped',
+                headStyles: { fillColor: [225, 29, 72] }
+            });
+
+            // Final Calculation
+            const finalY = doc.lastAutoTable.finalY + 20;
+            doc.setDrawColor(200);
+            doc.line(14, finalY, 196, finalY);
+
+            doc.setFontSize(16);
+            doc.setTextColor(5, 150, 105);
+            doc.text(`Final Remaining Balance: Rs. ${final}`, 196, finalY + 10, { align: "right" });
+
+            doc.save(`Swarna_Residency_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        function resetAll() {
+            if (confirm("Are you sure you want to reset all data?")) {
+                location.reload();
+            }
+        }
+
+        function showToast(msg) {
+            const div = document.createElement('div');
+            div.className = "fixed bottom-5 right-5 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-2xl z-50 animate-bounce";
+            div.innerText = msg;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 3000);
+        }
+
+        // Initialize
+        calculateTotals();
+        renderExpenses();
+    </script>
+</body>
+</html>
