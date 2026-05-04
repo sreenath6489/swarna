@@ -15,6 +15,7 @@
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         select { cursor: pointer; }
+        .note-item:hover .delete-note { opacity: 1; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -22,8 +23,8 @@
     <div class="max-w-4xl mx-auto">
         <!-- Header -->
         <header class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-slate-800">Swarna Residency</h1>
-            <p class="text-slate-500">Apartment Management Portal</p>
+            <h1 class="text-3xl font-bold text-slate-800 uppercase tracking-tight">SWARNA RESIDENCY FLAT OWNERS ASSOCIATION</h1>
+            <p class="text-lg text-slate-500 font-medium mt-2">Monthly maintenance and expenses report</p>
         </header>
 
         <div class="grid grid-cols-1 gap-8">
@@ -114,12 +115,9 @@
                             <option value="">-- Select Preset Expense --</option>
                             <option value="Watchman salary">Watchman salary</option>
                             <option value="Eswar poojari">Temple poojari Salary & Daily Pooja Expenses</option>
-                            
-
-                            <option value="Subramanyam salary">D.Subramanyam (A & B Blocks Maintenance Colelction)</option>
+                            <option value="Subramanyam salary">D.Subramanyam (A & B Blocks Maintenance Collection)</option>
                             <option value="Sankar tough Ganga">Sankar Telugu Ganga</option>
                             <option value="Garage">Muni Garage Shankar </option>
-                            
                             <option value="CUSTOM">Custom Field...</option>
                         </select>
                         <input type="text" id="customExpenseName" placeholder="Expense Name" class="hidden flex-1 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
@@ -149,6 +147,25 @@
                             </tr>
                         </tfoot>
                     </table>
+                </div>
+            </section>
+
+            <!-- Section 3: Additional Notes -->
+            <section class="card p-6">
+                <div class="flex items-center mb-4 gap-2 text-amber-600">
+                    <i class="fas fa-sticky-note text-xl"></i>
+                    <h2 class="text-xl font-bold">Additional Notes</h2>
+                </div>
+                
+                <div class="flex flex-col md:flex-row gap-3 mb-4">
+                    <input type="text" id="noteInput" placeholder="Type a note or remark for the report..." class="flex-1 p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none">
+                    <button onclick="addNote()" class="bg-amber-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-amber-700 transition-colors whitespace-nowrap">
+                        Add Note
+                    </button>
+                </div>
+
+                <div id="notesContainer" class="space-y-2">
+                    <!-- Notes appear here -->
                 </div>
             </section>
 
@@ -182,6 +199,7 @@
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         let isBanked = false;
         let expenses = [];
+        let notes = [];
 
         // Initialize Year Select
         const yearSelect = document.getElementById('selectedYear');
@@ -204,7 +222,6 @@
             const currName = monthNames[selectedIdx];
             const nextName = monthNames[nextIdx];
 
-            // Update all label spans
             document.querySelectorAll('.prevMonthText').forEach(el => el.innerText = prevName);
             document.querySelectorAll('.currMonthText').forEach(el => el.innerText = currName);
             document.querySelectorAll('.nextMonthText').forEach(el => el.innerText = nextName);
@@ -212,7 +229,6 @@
             calculateTotals();
         }
 
-        // Handle the expense dropdown toggle for custom entry
         document.getElementById('expenseSelect').addEventListener('change', function(e) {
             const customInput = document.getElementById('customExpenseName');
             if (e.target.value === 'CUSTOM') {
@@ -311,6 +327,41 @@
             });
         }
 
+        function addNote() {
+            const input = document.getElementById('noteInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            notes.push({ id: Date.now(), text });
+            input.value = '';
+            renderNotes();
+        }
+
+        function removeNote(id) {
+            notes = notes.filter(n => n.id !== id);
+            renderNotes();
+        }
+
+        function renderNotes() {
+            const container = document.getElementById('notesContainer');
+            container.innerHTML = '';
+            if (notes.length === 0) {
+                container.innerHTML = `<p class="text-slate-400 italic text-sm py-2">No additional notes added.</p>`;
+                return;
+            }
+            notes.forEach(note => {
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 group note-item";
+                div.innerHTML = `
+                    <span class="text-slate-700 text-sm"><i class="fas fa-circle text-[6px] mr-3 align-middle text-amber-500"></i> ${note.text}</span>
+                    <button onclick="removeNote(${note.id})" class="text-slate-300 hover:text-rose-600 transition-colors delete-note opacity-0">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
         async function downloadPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -328,15 +379,17 @@
             const expTotal = document.getElementById('expenseTotalDisplay').innerText;
             const final = document.getElementById('finalBalanceTotal').innerText;
 
-            doc.setFontSize(22);
+            // Header Section
+            doc.setFontSize(18);
             doc.setTextColor(30, 41, 59);
-            doc.text("Swarna Residency", 105, 20, { align: "center" });
+            doc.text("SWARNA RESIDENCY FLAT OWNERS ASSOCIATION", 105, 20, { align: "center" });
             
             doc.setFontSize(12);
             doc.setTextColor(100);
-            doc.text(`Monthly Management Report: ${selectedMonth} ${selectedYear}`, 105, 28, { align: "center" });
+            doc.text(`Monthly maintenance and expenses report: ${selectedMonth} ${selectedYear}`, 105, 28, { align: "center" });
             doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 34, { align: "center" });
 
+            // 1. Collections
             doc.setFontSize(14);
             doc.setTextColor(79, 70, 229);
             doc.text(`1. Collections (${selectedMonth})`, 14, 45);
@@ -358,6 +411,7 @@
                 headStyles: { fillColor: [79, 70, 229] }
             });
 
+            // 2. Expenses
             doc.setFontSize(14);
             doc.setTextColor(225, 29, 72);
             doc.text(`2. Expenses (${nextName})`, 14, doc.lastAutoTable.finalY + 15);
@@ -373,13 +427,31 @@
                 headStyles: { fillColor: [225, 29, 72] }
             });
 
-            const finalY = doc.lastAutoTable.finalY + 20;
+            let finalY = doc.lastAutoTable.finalY + 15;
+
+            // Summary Balance
             doc.setDrawColor(200);
             doc.line(14, finalY, 196, finalY);
-
-            doc.setFontSize(16);
+            doc.setFontSize(14);
             doc.setTextColor(5, 150, 105);
-            doc.text(`Total Remaining Balance end of ${nextName}: Rs. ${final}`, 196, finalY + 10, { align: "right" });
+            doc.text(`Final Remaining Balance (end of ${nextName}): Rs. ${final}`, 196, finalY + 10, { align: "right" });
+
+            // 3. Notes Section
+            if (notes.length > 0) {
+                finalY += 25;
+                doc.setFontSize(13);
+                doc.setTextColor(180, 83, 9); // Amber color
+                doc.text("Additional Remarks & Notes:", 14, finalY);
+                
+                doc.setFontSize(10);
+                doc.setTextColor(60);
+                let noteY = finalY + 8;
+                notes.forEach((note, index) => {
+                    const splitNote = doc.splitTextToSize(`• ${note.text}`, 180);
+                    doc.text(splitNote, 14, noteY);
+                    noteY += (splitNote.length * 6);
+                });
+            }
 
             doc.save(`Swarna_Residency_Report_${selectedMonth}_${selectedYear}.pdf`);
         }
@@ -398,10 +470,10 @@
             setTimeout(() => div.remove(), 3000);
         }
 
-        // Run initial label update
         window.onload = () => {
             updateMonthLabels();
             renderExpenses();
+            renderNotes();
         };
     </script>
 </body>
